@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
                                 Text(
-                                  "Kevin Joshua",
+                                  "Guest",
                                   style: TextStyle(
                                     color: Colors.black,
                                     fontSize: 20,

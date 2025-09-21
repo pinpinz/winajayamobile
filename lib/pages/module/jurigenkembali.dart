@@ -82,7 +82,7 @@ class _ReturPageState extends State<ReturPage> {
         flag: "0", // 0 = insert baru
         nomor: "", // kosong → biar SP generate otomatis
         qr: result,
-        idUser: "U001", // TODO: ganti dengan user login
+        idUser: "1",
       );
 
       if (response != null && response["status"] == "success") {

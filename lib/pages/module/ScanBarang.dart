@@ -179,12 +179,12 @@ class _ScannerPageState extends State<ScannerPage> {
     for (var item in _elements) {
       final res = await ApiService.scanPicking(
         flag: "0",
-        nomor: noTransaksi ?? "", // kalau null, kirim kosong biar SP generate
-        kodeCust: selectedValue!, // dari dropdown
-        sitePlan: "SP001", // sementara hardcode, nanti bisa pilih dari UI
+        nomor: noTransaksi ?? "",
+        kodeCust: selectedValue!,
+        sitePlan: "Gudang Winajaya",
         qr: item["name"] ?? "",
         bobot: (item["berat"] ?? "0").replaceAll(" Kg", ""),
-        idUser: "U001", // sementara hardcode
+        idUser: "1", //iduser login
       );
 
       if (res != null && res["status"] == "success") {

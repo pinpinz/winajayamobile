@@ -14,7 +14,7 @@ class AktivasiPage extends StatefulWidget {
 }
 
 class _AktivasiPageState extends State<AktivasiPage> {
-  // List hasil scan
+  /// List hasil scan
   List<Map<String, String>> _elements = [];
 
   /// Tambah item hasil scan
@@ -94,9 +94,9 @@ class _AktivasiPageState extends State<AktivasiPage> {
     if (result != null) {
       final response = await ApiService.scanAktivasi(
         flag: "0", // insert baru
-        nomor: "", // biar SP generate otomatis
+        nomor: "",
         qr: result,
-        idUser: "U001", // TODO: ganti sesuai user login
+        idUser: "1",
       );
 
       if (response != null && response["status"] == "success") {
@@ -121,7 +121,7 @@ class _AktivasiPageState extends State<AktivasiPage> {
     }
   }
 
-  /// Confirm data (sudah tersimpan di server via SP)
+  // Confirm data (sudah tersimpan di server via SP)
   Future<void> _confirmData() async {
     if (_elements.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

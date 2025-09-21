@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   static String baseUrl =
-      "http://localhost/project-api"; // ganti sesuai path di server (misal http://192.168.1.5/api)
+      "http://localhost/project-api"; // ganti sesuai path di server)
   static Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 10),
@@ -19,7 +19,7 @@ class ApiService {
       receiveTimeout: const Duration(seconds: 10),
       headers: {"Content-Type": "application/json"},
     ));
-    print("✅ Base URL diganti ke: $baseUrl");
+    print("Base URL diganti ke: $baseUrl");
   }
 
   // =========================
