@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 
 class ApiService {
-  static String baseUrl = "http://localhost:3000"; // default
+  static String baseUrl =
+      "http://localhost/project-api"; // ganti sesuai path di server (misal http://192.168.1.5/api)
   static Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 10),
@@ -21,66 +22,90 @@ class ApiService {
     print("✅ Base URL diganti ke: $baseUrl");
   }
 
-  static Future<Map<String, dynamic>?> checkQR(String qr) async {
+  // =========================
+  // 🔹 1. API Aktivasi QR
+  // =========================
+  static Future<Map<String, dynamic>?> scanAktivasi({
+    required String flag,
+    required String nomor,
+    required String qr,
+    required String idUser,
+  }) async {
     try {
       final response = await _dio.post(
-        "/check-qr",
-        data: {"qr": qr},
+        "/api_scanqr.php",
+        data: {
+          "flag": flag,
+          "nomor": nomor,
+          "QR": qr,
+          "idUser": idUser,
+        },
       );
       if (response.statusCode == 200) return response.data;
       return null;
     } catch (e) {
-      print("Error checkQR: $e");
+      print("❌ Error scanAktivasi: $e");
       return null;
     }
   }
 
-  static Future<bool> saveTransaction(String noTransaksi, String customer,
-      List<Map<String, String>> items) async {
+  // =========================
+  // 🔹 2. API Picking
+  // =========================
+  static Future<Map<String, dynamic>?> scanPicking({
+    required String flag,
+    required String nomor,
+    required String kodeCust,
+    required String sitePlan,
+    required String qr,
+    required String bobot,
+    required String idUser,
+  }) async {
     try {
       final response = await _dio.post(
-        "/save-transaction",
+        "/api_scanPicking.php",
         data: {
-          "no_transaksi": noTransaksi,
-          "customer": customer,
-          "items": items,
+          "flag": flag,
+          "nomor": nomor,
+          "kodeCust": kodeCust,
+          "sitePlan": sitePlan,
+          "QR": qr,
+          "bobot": bobot,
+          "idUser": idUser,
         },
       );
-      return response.statusCode == 200 && response.data['success'] == true;
-    } catch (e) {
-      print("Error saveTransaction: $e");
-      return false;
-    }
-  }
-
-  static Future<Map<String, dynamic>?> getJerigen(String qr) async {
-    try {
-      final response = await _dio.post(
-        "/returjerigen",
-        data: {"qr": qr},
-      );
-
-      if (response.statusCode == 200) {
-        return response.data;
-      }
+      if (response.statusCode == 200) return response.data;
       return null;
     } catch (e) {
-      print("Error getJerigen: $e");
+      print("❌ Error scanPicking: $e");
       return null;
     }
   }
 
-  static Future<bool> saveJerigen(List<Map<String, String>> items) async {
+  // =========================
+  // 🔹 3. API Jurigen Kembali
+  // =========================
+  static Future<Map<String, dynamic>?> scanJurigenKembali({
+    required String flag,
+    required String nomor,
+    required String qr,
+    required String idUser,
+  }) async {
     try {
       final response = await _dio.post(
-        "/save-returjerigen",
-        data: {"items": items},
+        "/api_scanJurigenKembali.php",
+        data: {
+          "flag": flag,
+          "nomor": nomor,
+          "QR": qr,
+          "idUser": idUser,
+        },
       );
-
-      return response.statusCode == 200 && response.data['success'] == true;
+      if (response.statusCode == 200) return response.data;
+      return null;
     } catch (e) {
-      print("Error saveJerigen: $e");
-      return false;
+      print("❌ Error scanJurigenKembali: $e");
+      return null;
     }
   }
 }

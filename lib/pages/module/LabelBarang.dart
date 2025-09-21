@@ -4,41 +4,6 @@ import 'package:day35/widget/qrscanner.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:day35/widget/apiservice.dart';
-import 'package:dio/dio.dart';
-
-class ApiService {
-  static const String baseUrl = "http://localhost:3000"; // ganti sesuai server
-  static final Dio _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {"Content-Type": "application/json"},
-  ));
-
-  static Future<Map<String, dynamic>?> getJerigen(String qr) async {
-    try {
-      final response = await _dio.post("/returjerigen", data: {"qr": qr});
-      if (response.statusCode == 200) {
-        return response.data;
-      }
-      return null;
-    } catch (e) {
-      print("Error getJerigen: $e");
-      return null;
-    }
-  }
-
-  static Future<bool> saveJerigen(List<Map<String, String>> items) async {
-    try {
-      final response =
-          await _dio.post("/save-returjerigen", data: {"items": items});
-      return response.statusCode == 200 && response.data['success'] == true;
-    } catch (e) {
-      print("Error saveJerigen: $e");
-      return false;
-    }
-  }
-}
 
 class ReturPage extends StatefulWidget {
   const ReturPage({Key? key}) : super(key: key);
@@ -50,6 +15,7 @@ class ReturPage extends StatefulWidget {
 class _ReturPageState extends State<ReturPage> {
   List<Map<String, String>> _jerigenList = [];
 
+  /// Widget untuk menampilkan data jerigen
   Widget _createGroupedListView() {
     if (_jerigenList.isEmpty) {
       return Center(
@@ -94,7 +60,7 @@ class _ReturPageState extends State<ReturPage> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Berat: ${element['berat'] ?? '-'}',
+              'Transaksi: ${element['idTrans'] ?? '-'}',
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             leading: const Icon(Icons.local_drink, color: Colors.blueAccent),
@@ -104,6 +70,7 @@ class _ReturPageState extends State<ReturPage> {
     );
   }
 
+  /// Fungsi untuk scan QR dan langsung simpan via API
   Future<void> _scanQRCode() async {
     final result = await QRScannerHelper.scanQRCode(
       context,
@@ -111,22 +78,38 @@ class _ReturPageState extends State<ReturPage> {
     );
 
     if (result != null) {
-      final response = await ApiService.getJerigen(result);
-      if (response != null && response['success'] == true) {
+      final response = await ApiService.scanJurigenKembali(
+        flag: "0", // 0 = insert baru
+        nomor: "", // kosong → biar SP generate otomatis
+        qr: result,
+        idUser: "U001", // TODO: ganti dengan user login
+      );
+
+      if (response != null && response["status"] == "success") {
+        final data = response["data"][0]; // ambil hasil SP
+
         setState(() {
           _jerigenList.add({
-            "qr": response['qr'] ?? result,
-            "berat": response['berat'] ?? "0 Kg",
+            "qr": result,
+            "idTrans": data["idTrans"] ?? "",
           });
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Jerigen berhasil diretur"),
+          backgroundColor: Colors.green,
+        ));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("QR tidak valid di sistem")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              response?["data"]?[0]?["status"] ?? "QR tidak valid di sistem"),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
 
+  /// Konfirmasi (tidak perlu simpan ulang, karena SP sudah langsung insert)
   Future<void> _confirmData() async {
     if (_jerigenList.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -135,20 +118,12 @@ class _ReturPageState extends State<ReturPage> {
       return;
     }
 
-    final success = await ApiService.saveJerigen(_jerigenList);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text("Data retur jerigen sudah tersimpan di server"),
+      backgroundColor: Colors.green,
+    ));
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Data retur jerigen berhasil disimpan"),
-        backgroundColor: Colors.green,
-      ));
-      setState(() => _jerigenList.clear());
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Gagal menyimpan data"),
-        backgroundColor: Colors.red,
-      ));
-    }
+    setState(() => _jerigenList.clear());
   }
 
   @override
@@ -192,7 +167,7 @@ class _ReturPageState extends State<ReturPage> {
             ),
           ),
 
-          /// Footer dengan tombol
+          /// Footer dengan tombol aksi
           SafeArea(
             child: Row(
               children: [

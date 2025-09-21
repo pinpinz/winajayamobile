@@ -4,6 +4,7 @@ import 'package:day35/widget/popup.dart';
 import 'package:day35/widget/qrscanner.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
+import 'package:day35/widget/apiservice.dart';
 
 class AktivasiPage extends StatefulWidget {
   const AktivasiPage({Key? key}) : super(key: key);
@@ -13,15 +14,16 @@ class AktivasiPage extends StatefulWidget {
 }
 
 class _AktivasiPageState extends State<AktivasiPage> {
-  // List kosong (akan terisi setelah scan QR)
+  // List hasil scan
   List<Map<String, String>> _elements = [];
 
-  // Tambah item hasil scan (tanpa check API)
-  void _addScannedItem(String qrResult) {
+  /// Tambah item hasil scan
+  void _addScannedItem(String qrResult, String status, String idTrans) {
     setState(() {
       _elements.add({
         'name': qrResult,
-        'status': 'Available',
+        'status': status,
+        'idTrans': idTrans,
       });
     });
   }
@@ -51,12 +53,12 @@ class _AktivasiPageState extends State<AktivasiPage> {
       useStickyGroupSeparators: true,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      groupSeparatorBuilder: (String value) => const Padding(
-        padding: EdgeInsets.all(8.0),
+      groupSeparatorBuilder: (String value) => Padding(
+        padding: const EdgeInsets.all(8.0),
         child: Text(
-          'Nama Barang',
+          value,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
       itemBuilder: (c, element) {
@@ -70,6 +72,7 @@ class _AktivasiPageState extends State<AktivasiPage> {
               element['name'] ?? 'No Name',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            subtitle: Text("Transaksi: ${element['idTrans'] ?? '-'}"),
             leading: const Icon(
               Icons.add_box_sharp,
               color: Colors.redAccent,
@@ -81,11 +84,86 @@ class _AktivasiPageState extends State<AktivasiPage> {
     );
   }
 
+  /// Scan QR dan panggil API Aktivasi
+  Future<void> _scanQRCode() async {
+    final result = await QRScannerHelper.scanQRCode(
+      context,
+      title: 'Scan QR Code',
+    );
+
+    if (result != null) {
+      final response = await ApiService.scanAktivasi(
+        flag: "0", // insert baru
+        nomor: "", // biar SP generate otomatis
+        qr: result,
+        idUser: "U001", // TODO: ganti sesuai user login
+      );
+
+      if (response != null && response["status"] == "success") {
+        final data = response["data"][0];
+        _addScannedItem(
+          result,
+          data["status"] ?? "Aktif",
+          data["idTrans"] ?? "-",
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("QR berhasil diaktivasi: ${data["idTrans"]}"),
+          backgroundColor: Colors.green,
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response?["data"]?[0]?["status"] ??
+              "QR Code tidak valid di sistem"),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  /// Confirm data (sudah tersimpan di server via SP)
+  Future<void> _confirmData() async {
+    if (_elements.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Belum ada data yang diaktivasi"),
+      ));
+      return;
+    }
+
+    showAnimatedBottomSheet(
+      context: context,
+      title: "Apakah anda yakin?",
+      options: [
+        {
+          'label': 'Confirm',
+          'icon': const Icon(Icons.checklist, color: Colors.green),
+          'onTap': (sheetContext) async {
+            Navigator.of(sheetContext).pop();
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text("Data aktivasi sudah tersimpan di server"),
+              backgroundColor: Colors.green,
+            ));
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          },
+        },
+        {
+          'label': 'Cancel',
+          'icon': const Icon(Icons.cancel, color: Colors.red),
+          'onTap': (sheetContext) {
+            Navigator.of(sheetContext).pop();
+          },
+        },
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // cegah tombol back Android menutup Confirm/Cancel
         final shouldPop = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -110,7 +188,7 @@ class _AktivasiPageState extends State<AktivasiPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           title: const Text(
-            'Aktivasi Page',
+            'Aktivasi Barang',
             style: TextStyle(color: Colors.black),
           ),
           elevation: 0,
@@ -157,29 +235,13 @@ class _AktivasiPageState extends State<AktivasiPage> {
               ),
             ),
 
-            /// Footer tetap di bawah
+            /// Footer
             SafeArea(
               child: Row(
                 children: [
-                  /// Tombol Scan QR
                   Expanded(
                     child: InkWell(
-                      onTap: () async {
-                        final result = await QRScannerHelper.scanQRCode(
-                          context,
-                          title: 'Scan QR Code',
-                        );
-
-                        if (result != null) {
-                          _addScannedItem(result); // ✅ masuk list
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('QR Code: $result'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      },
+                      onTap: _scanQRCode,
                       child: Container(
                         height: 55,
                         color: Colors.blueGrey,
@@ -193,39 +255,9 @@ class _AktivasiPageState extends State<AktivasiPage> {
                       ),
                     ),
                   ),
-
-                  /// Tombol Confirm / Cancel
                   Expanded(
                     child: InkWell(
-                      onTap: () {
-                        showAnimatedBottomSheet(
-                          context: context,
-                          title: "Apakah anda yakin?",
-                          options: [
-                            {
-                              'label': 'Confirm',
-                              'icon': const Icon(Icons.checklist,
-                                  color: Colors.green),
-                              'onTap': (sheetContext) async {
-                                Navigator.of(sheetContext).pop();
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const HomePage()),
-                                );
-                              },
-                            },
-                            {
-                              'label': 'Cancel',
-                              'icon':
-                                  const Icon(Icons.cancel, color: Colors.red),
-                              'onTap': (sheetContext) {
-                                Navigator.of(sheetContext).pop();
-                              },
-                            },
-                          ],
-                        );
-                      },
+                      onTap: _confirmData,
                       child: Container(
                         height: 55,
                         color: Colors.teal,

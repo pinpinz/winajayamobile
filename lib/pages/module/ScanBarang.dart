@@ -167,21 +167,36 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _confirmData() async {
-    //if (noTransaksi == null || selectedValue == null || _elements.isEmpty)
-    if (selectedValue == null) {
+    if (selectedValue == null || _elements.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Lengkapi data sebelum simpan!"),
       ));
       return;
     }
 
-    final success = await ApiService.saveTransaction(
-      noTransaksi!,
-      selectedValue!,
-      _elements,
-    );
+    bool allSuccess = true;
 
-    if (success) {
+    for (var item in _elements) {
+      final res = await ApiService.scanPicking(
+        flag: "0",
+        nomor: noTransaksi ?? "", // kalau null, kirim kosong biar SP generate
+        kodeCust: selectedValue!, // dari dropdown
+        sitePlan: "SP001", // sementara hardcode, nanti bisa pilih dari UI
+        qr: item["name"] ?? "",
+        bobot: (item["berat"] ?? "0").replaceAll(" Kg", ""),
+        idUser: "U001", // sementara hardcode
+      );
+
+      if (res != null && res["status"] == "success") {
+        setState(() {
+          noTransaksi = res["data"][0]["idTrans"]; // simpan nomor transaksi
+        });
+      } else {
+        allSuccess = false;
+      }
+    }
+
+    if (allSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Data berhasil disimpan!"),
         backgroundColor: Colors.green,
@@ -192,7 +207,7 @@ class _ScannerPageState extends State<ScannerPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Gagal menyimpan data!"),
+        content: Text("Sebagian data gagal disimpan!"),
         backgroundColor: Colors.red,
       ));
     }
