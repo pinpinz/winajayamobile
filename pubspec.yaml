@@ -35,6 +35,10 @@ dependencies:
   persistent_bottom_nav_bar_v2: ^6.1.0
   mobile_scanner: ^7.0.1
   dio: ^5.9.0
+  simple_animations: ^5.2.0
+  shared_preferences: ^2.5.3
+  shimmer: ^3.0.0
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +59,9 @@ flutter:
   - assets/icons/label.png
   - assets/icons/profile.png
   - assets/icons/image111.png
+  - assets/animation/loginanimation.json
+  
+
 
   # To add assets to your application, add an assets section, like this:
   
