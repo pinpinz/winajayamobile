@@ -2,9 +2,10 @@ import 'package:animate_do/animate_do.dart';
 import 'package:day35/models/service.dart';
 import 'package:day35/pages/module/AktivasiBarang.dart';
 import 'package:day35/pages/module/HistoryBarang.dart';
-import 'package:day35/pages/module/LabelBarang.dart' hide ApiService;
-import 'package:day35/pages/module/ScanBarang.dart' hide ApiService;
-import 'package:day35/widget/apiservice.dart';
+import 'package:day35/pages/module/LabelBarang.dart';
+import 'package:day35/pages/module/ScanBarang.dart';
+// ✅ hanya pakai ApiService dari sini
+import 'package:day35/widget/apiservice.dart' as api;
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             onPressed: () async {
               final controller =
-                  TextEditingController(text: ApiService.baseUrl);
+                  TextEditingController(text: api.ApiService.baseUrl);
               final newIp = await showDialog<String>(
                 context: context,
                 builder: (ctx) => AlertDialog(
@@ -63,7 +64,7 @@ class _HomePageState extends State<HomePage> {
 
               if (newIp != null && newIp.isNotEmpty) {
                 setState(() {
-                  ApiService.updateBaseUrl(newIp);
+                  api.ApiService.updateBaseUrl(newIp);
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Base URL diubah ke: $newIp")),

@@ -2,44 +2,7 @@ import 'package:day35/pages/home.dart';
 import 'package:day35/widget/qrscanner.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
-import 'package:dio/dio.dart';
-
-/// API Service pakai dio
-class ApiService {
-  static const String baseUrl = "http://localhost:3000"; // ganti sesuai server
-  static final Dio _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {"Content-Type": "application/json"},
-  ));
-
-  static Future<Map<String, dynamic>?> checkQR(String qr) async {
-    try {
-      final response = await _dio.post("/check-qr", data: {"qr": qr});
-      if (response.statusCode == 200) return response.data;
-      return null;
-    } catch (e) {
-      print("Error checkQR: $e");
-      return null;
-    }
-  }
-
-  static Future<bool> saveTransaction(String noTransaksi, String customer,
-      List<Map<String, String>> items) async {
-    try {
-      final response = await _dio.post("/save-transaction", data: {
-        "no_transaksi": noTransaksi,
-        "customer": customer,
-        "items": items,
-      });
-      return response.statusCode == 200 && response.data['success'] == true;
-    } catch (e) {
-      print("Error saveTransaction: $e");
-      return false;
-    }
-  }
-}
+import 'package:day35/widget/apiservice.dart';
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage({Key? key}) : super(key: key);

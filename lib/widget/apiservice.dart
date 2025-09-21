@@ -52,4 +52,35 @@ class ApiService {
       return false;
     }
   }
+
+  static Future<Map<String, dynamic>?> getJerigen(String qr) async {
+    try {
+      final response = await _dio.post(
+        "/returjerigen",
+        data: {"qr": qr},
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      print("Error getJerigen: $e");
+      return null;
+    }
+  }
+
+  static Future<bool> saveJerigen(List<Map<String, String>> items) async {
+    try {
+      final response = await _dio.post(
+        "/save-returjerigen",
+        data: {"items": items},
+      );
+
+      return response.statusCode == 200 && response.data['success'] == true;
+    } catch (e) {
+      print("Error saveJerigen: $e");
+      return false;
+    }
+  }
 }
