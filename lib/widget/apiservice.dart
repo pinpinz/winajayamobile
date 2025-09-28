@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   static String baseUrl =
-      "http://localhost/project-api"; // ganti sesuai path di server)
+      "https://puree.id/winajayaservice"; // ganti sesuai path di server)
   static Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 10),
@@ -106,6 +106,75 @@ class ApiService {
     } catch (e) {
       print("❌ Error scanJurigenKembali: $e");
       return null;
+    }
+  }
+
+  // =========================
+// 🔹 0. API Login
+// =========================
+  static Future<Map<String, dynamic>?> login({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final response = await _dio.post(
+        "/login.php",
+        data: {
+          "username": username,
+          "password": password,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (data["status"] == "success" && data["user"] != null) {
+          // langsung ambil field yang kamu mau
+          final namaPegawai = data["user"]["namaPegawai"];
+          final levelUser = data["user"]["levelUser"];
+
+          print("✅ Nama Pegawai: $namaPegawai");
+          print("✅ Level User  : $levelUser");
+
+          return {
+            "status": "success",
+            "namaPegawai": namaPegawai,
+            "levelUser": levelUser,
+            "raw": data, // simpan seluruh response kalau masih perlu
+          };
+        } else {
+          return {
+            "status": "error",
+            "message": data["message"] ?? "Login gagal",
+          };
+        }
+      }
+      return null;
+    } catch (e) {
+      print("❌ Error login: $e");
+      return {
+        "status": "error",
+        "message": e.toString(),
+      };
+    }
+  }
+
+  // =========================
+  // 🔹 4. API Get M0Customer
+  // =========================
+  static Future<Map<String, dynamic>?> getCustomer() async {
+    try {
+      final response = await _dio.get("/customer.php");
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      print("❌ Error getM0Customer: $e");
+      return {
+        "status": "error",
+        "message": e.toString(),
+      };
     }
   }
 }

@@ -12,11 +12,29 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> {
-  List<Map<String, String>> _elements = []; // kosong awal
+  List<Map<String, String>> _elements = []; // data hasil scan
+  List<String> customers = []; // 🔹 list customer dari API
   String? selectedValue;
   String? noTransaksi;
 
-  final List<String> customers = ['PT. ABC', 'PT. DEF', 'PT. GHI'];
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomers(); // panggil load customer saat page pertama kali dibuka
+  }
+
+  Future<void> _loadCustomers() async {
+    final result = await ApiService.getCustomer(); // pake API yg sudah dibuat
+    if (result != null && result["status"] == "success") {
+      setState(() {
+        customers = (result["data"] as List)
+            .map((item) => item["namaCustomer"].toString())
+            .toList();
+      });
+    } else {
+      print("❌ Gagal ambil data customer: ${result?["message"]}");
+    }
+  }
 
   Widget _createGroupedListView() {
     if (_elements.isEmpty) {
@@ -26,9 +44,11 @@ class _ScannerPageState extends State<ScannerPage> {
           children: const [
             Icon(Icons.qr_code_scanner, size: 80, color: Colors.grey),
             SizedBox(height: 10),
-            Text("Belum ada barang.\nSilakan scan QR Code.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(
+              "Belum ada barang.\nSilakan scan QR Code.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           ],
         ),
       );
@@ -63,7 +83,6 @@ class _ScannerPageState extends State<ScannerPage> {
             trailing: Text(element['berat'] ?? '0 Kg',
                 style: const TextStyle(fontSize: 16)),
             onTap: () async {
-              // Edit berat
               final controller = TextEditingController(
                   text: element['berat']?.replaceAll(" Kg", ""));
               final beratBaru = await showDialog<String>(
@@ -75,8 +94,7 @@ class _ScannerPageState extends State<ScannerPage> {
                       controller: controller,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        hintText: "Masukkan berat (Kg)",
-                      ),
+                          hintText: "Masukkan berat (Kg)"),
                     ),
                     actions: [
                       TextButton(
@@ -103,30 +121,10 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _scanQRCode() async {
-    final result = await QRScannerHelper.scanQRCode(
-      context,
-      title: 'Scan QR Code',
-    );
+    final result =
+        await QRScannerHelper.scanQRCode(context, title: 'Scan QR Code');
 
     if (result != null) {
-      // 🔒 sementara API check dimatikan untuk uji coba bebas
-      /*
-    final response = await ApiService.checkQR(result);
-    if (response != null && response['success'] == true) {
-      if (noTransaksi == null) {
-        setState(() {
-          noTransaksi = response['no_transaksi'];
-        });
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("QR Code tidak valid di sistem!")),
-      );
-      return;
-    }
-    */
-
-      // 👉 langsung input berat manual tanpa cek API
       final controller = TextEditingController();
       final berat = await showDialog<String>(
         context: context,
@@ -136,19 +134,16 @@ class _ScannerPageState extends State<ScannerPage> {
             content: TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: "Masukkan berat (Kg)",
-              ),
+              decoration:
+                  const InputDecoration(hintText: "Masukkan berat (Kg)"),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Batal"),
-              ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Batal")),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, controller.text),
-                child: const Text("OK"),
-              ),
+                  onPressed: () => Navigator.pop(ctx, controller.text),
+                  child: const Text("OK")),
             ],
           );
         },
@@ -184,12 +179,12 @@ class _ScannerPageState extends State<ScannerPage> {
         sitePlan: "Gudang Winajaya",
         qr: item["name"] ?? "",
         bobot: (item["berat"] ?? "0").replaceAll(" Kg", ""),
-        idUser: "1", //iduser login
+        idUser: "1", // iduser login
       );
 
       if (res != null && res["status"] == "success") {
         setState(() {
-          noTransaksi = res["data"][0]["idTrans"]; // simpan nomor transaksi
+          noTransaksi = res["data"][0]["idTrans"];
         });
       } else {
         allSuccess = false;
@@ -255,7 +250,6 @@ class _ScannerPageState extends State<ScannerPage> {
           Expanded(child: _createGroupedListView()),
         ],
       ),
-      // ✅ Tombol dipindah ke bottomNavigationBar agar aman di Android
       bottomNavigationBar: SafeArea(
         child: Row(
           children: [

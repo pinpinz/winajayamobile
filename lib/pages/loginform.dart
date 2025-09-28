@@ -1,3 +1,5 @@
+import 'package:day35/widget/apiservice.dart';
+import 'package:day35/widget/apiservice.dart' as api;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
@@ -19,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   void _showLoadingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // tidak bisa ditutup manual
+      barrierDismissible: false,
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -37,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Lottie.asset(
-                      'assets/animation/loginanimation.json', // ✅ animasi Lottie buatanmu
+                      'assets/animations/loginanimation.json', // pastikan path benar
                       width: 150,
                       height: 150,
                       fit: BoxFit.contain,
@@ -58,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// 🔹 Fungsi login sederhana (hardcode user)
+  /// 🔹 Fungsi login via API
   Future<void> _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
@@ -71,30 +73,48 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    _showLoadingDialog(); // tampilkan popup loading
+    _showLoadingDialog();
 
-    // simulasi proses login (2 detik)
-    await Future.delayed(const Duration(seconds: 2));
+    final result =
+        await ApiService.login(username: username, password: password);
 
-    if (username == "admin" && password == "1234") {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("userId", "U001");
-      await prefs.setString("username", username);
+    Navigator.of(context, rootNavigator: true).pop(); // tutup loading dialog
 
-      // tutup popup loading
-      Navigator.of(context, rootNavigator: true).pop();
+    if (result != null && result["raw"] != null) {
+      final raw = result["raw"];
+      final message = raw["message"];
 
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      if (message == "Login berhasil") {
+        final user = raw["user"];
+        final namaPegawai = user["namaPegawai"];
+        final levelUser = user["levelUser"];
+
+        // simpan ke SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("userId", user["idUser"]);
+        await prefs.setString("username", user["username"]);
+        await prefs.setString("namaPegawai", namaPegawai);
+        await prefs.setString("levelUser", levelUser);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Selamat datang $namaPegawai ($levelUser)"),
+          backgroundColor: Colors.green,
+        ));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(message ?? "Login gagal"),
+          backgroundColor: Colors.red,
+        ));
+      }
     } else {
-      // tutup popup loading
-      Navigator.of(context, rootNavigator: true).pop();
-
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Username atau Password salah!"),
+        content: Text("Terjadi kesalahan koneksi ke server"),
         backgroundColor: Colors.red,
       ));
     }
@@ -171,12 +191,67 @@ class _LoginPageState extends State<LoginPage> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.teal,
                   ),
                   child: const Text(
                     "Login",
                     style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+// 🔹 Tombol Ganti IP di halaman login
+              FadeAnimation(
+                2.0,
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final controller =
+                        TextEditingController(text: api.ApiService.baseUrl);
+
+                    final newIp = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text("Ganti IP Server"),
+                        content: TextField(
+                          controller: controller,
+                          decoration: const InputDecoration(
+                            hintText: "contoh: http://192.168.1.10/project-api",
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text("Batal"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () =>
+                                Navigator.pop(ctx, controller.text),
+                            child: const Text("Simpan"),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (newIp != null && newIp.isNotEmpty) {
+                      api.ApiService.updateBaseUrl(newIp);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Base URL diubah ke: $newIp")),
+                      );
+                      setState(() {}); // refresh UI kalau perlu
+                    }
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text("Ganti IP Server"),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),

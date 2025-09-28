@@ -1,12 +1,20 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:day35/models/service.dart';
-import 'package:day35/pages/module/AktivasiBarang.dart';
-import 'package:day35/pages/module/HistoryBarang.dart';
-import 'package:day35/pages/module/LabelBarang.dart';
-import 'package:day35/pages/module/ScanBarang.dart';
-// ✅ hanya pakai ApiService dari sini
-import 'package:day35/widget/apiservice.dart' as api;
+import 'package:day35/pages/loginform.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// MODEL
+import 'package:day35/models/service.dart';
+
+// MODULE PAGES
+import 'package:day35/pages/module/AktivasiBarang.dart'; // -> class AktivasiPage
+import 'package:day35/pages/module/HistoryBarang.dart'; // -> class HistoryPage
+import 'package:day35/pages/module/ScanBarang.dart'; // -> class ScannerPage
+
+// ⚠️ Pilih salah satu sesuai file yang kamu punya:
+// import 'package:day35/pages/module/LabelBarang.dart';  // jika class ReturPage ada di sini
+import 'package:day35/pages/module/LabelBarang.dart';
+// API SERVICE (untuk ganti base URL dari header)
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -16,7 +24,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Service> services = [
+  String namaPegawai = "Guest";
+  String levelUser = "Staff Gudang";
+
+  final List<Service> services = [
     Service('Picking', 'assets/icons/scan.png'),
     Service('Aktivasi', 'assets/icons/active.png'),
     Service('History', 'assets/icons/file.png'),
@@ -24,76 +35,61 @@ class _HomePageState extends State<HomePage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      namaPegawai = prefs.getString("namaPegawai") ?? "Guest";
+      levelUser = prefs.getString("levelUser") ?? "Staff Gudang";
+    });
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
+
+  void _goToService(String name) {
+    if (name == 'Picking') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const ScannerPage()));
+    } else if (name == 'Aktivasi') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const AktivasiPage()));
+    } else if (name == 'History') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const HistoryPage()));
+    } else if (name == 'Jerigen Kembali') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const ReturPage()));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text(
-          'dashboard',
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text('dashboard', style: TextStyle(color: Colors.black)),
         elevation: 0,
         actions: [
-          // 🔹 Tombol ganti IP
+          // Tombol logout
           IconButton(
-            onPressed: () async {
-              final controller =
-                  TextEditingController(text: api.ApiService.baseUrl);
-              final newIp = await showDialog<String>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text("Ganti IP Server"),
-                  content: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: "contoh: http://192.168.1.10:3000",
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text("Batal"),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, controller.text),
-                      child: const Text("Simpan"),
-                    ),
-                  ],
-                ),
-              );
-
-              if (newIp != null && newIp.isNotEmpty) {
-                setState(() {
-                  api.ApiService.updateBaseUrl(newIp);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Base URL diubah ke: $newIp")),
-                );
-              }
-            },
-            icon: Icon(
-              Icons.settings,
-              color: Colors.grey.shade700,
-              size: 30,
-            ),
+            onPressed: _logout,
+            icon: Icon(Icons.logout, color: Colors.grey.shade700, size: 30),
           ),
-
-          // 🔹 Tombol logout
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/login');
-            },
-            icon: Icon(
-              Icons.logout,
-              color: Colors.grey.shade700,
-              size: 30,
-            ),
-          )
         ],
         leading: GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/login');
-          },
+          onTap: () => Navigator.pushNamed(context, '/login'),
           child: const Padding(
             padding: EdgeInsets.all(10.0),
             child: CircleAvatar(
@@ -114,6 +110,8 @@ class _HomePageState extends State<HomePage> {
                           left: 20.0, top: 10.0, right: 10.0),
                     ),
                   ),
+
+                  // KARTU PROFIL ATAS —> pakai namaPegawai & levelUser
                   FadeInUp(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -145,19 +143,19 @@ class _HomePageState extends State<HomePage> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children: [
                                 Text(
-                                  "Guest",
-                                  style: TextStyle(
+                                  namaPegawai, // ← GANTI Guest
+                                  style: const TextStyle(
                                     color: Colors.black,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 5),
+                                const SizedBox(height: 5),
                                 Text(
-                                  "Staff Gudang",
-                                  style: TextStyle(
+                                  levelUser, // ← GANTI Staff Gudang
+                                  style: const TextStyle(
                                     color: Colors.black54,
                                     fontSize: 18,
                                   ),
@@ -169,7 +167,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // TITLE CATEGORIES
                   FadeInUp(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 20.0, right: 10.0),
@@ -179,14 +180,14 @@ class _HomePageState extends State<HomePage> {
                           Text(
                             'Categories',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                     ),
                   ),
+
+                  // GRID MENU
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 15),
@@ -202,42 +203,13 @@ class _HomePageState extends State<HomePage> {
                       ),
                       itemCount: services.length,
                       itemBuilder: (BuildContext context, int index) {
+                        final svc = services[index];
                         return GestureDetector(
-                          onTap: () {
-                            if (services[index].name == 'Picking') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ScannerPage()),
-                              );
-                            } else if (services[index].name == 'Aktivasi') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => AktivasiPage()),
-                              );
-                            } else if (services[index].name == 'History') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => HistoryPage()),
-                              );
-                            } else if (services[index].name ==
-                                'Jerigen Kembali') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ReturPage()),
-                              );
-                            }
-                          },
+                          onTap: () => _goToService(svc.name),
                           child: FadeInUp(
                             delay: Duration(milliseconds: 500 * index),
-                            child: serviceContainer(
-                              services[index].imageURL,
-                              services[index].name,
-                              index,
-                            ),
+                            child:
+                                serviceContainer(svc.imageURL, svc.name, index),
                           ),
                         );
                       },
@@ -247,6 +219,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+
+          // FOOTER
           SafeArea(
             bottom: true,
             top: false,
@@ -265,36 +239,28 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
   Widget serviceContainer(String image, String name, int index) {
-    return GestureDetector(
-      child: Container(
-        margin: const EdgeInsets.only(right: 20),
-        padding: const EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          border: Border.all(
-            color: Colors.blue.withOpacity(0),
-            width: 2.0,
-          ),
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Image.asset(image, height: 45, fit: BoxFit.contain),
-            const SizedBox(height: 20),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 17),
-            )
-          ],
-        ),
+    return Container(
+      margin: const EdgeInsets.only(right: 20),
+      padding: const EdgeInsets.all(10.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        border: Border.all(color: Colors.blue.withOpacity(0), width: 2.0),
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Image.asset(image, height: 45, fit: BoxFit.contain),
+          const SizedBox(height: 20),
+          Text(name, style: const TextStyle(fontSize: 17)),
+        ],
       ),
     );
   }

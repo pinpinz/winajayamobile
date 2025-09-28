@@ -93,7 +93,7 @@ class _AktivasiPageState extends State<AktivasiPage> {
 
     if (result != null) {
       final response = await ApiService.scanAktivasi(
-        flag: "0", // insert baru
+        flag: "0",
         nomor: "",
         qr: result,
         idUser: "1",
@@ -112,9 +112,13 @@ class _AktivasiPageState extends State<AktivasiPage> {
           backgroundColor: Colors.green,
         ));
       } else {
+        // 🔥 tampilkan error lebih detail
+        final errorMessage = response?["message"] ??
+            response?["data"]?[0]?["status"] ??
+            "QR Code tidak valid di sistem";
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response?["data"]?[0]?["status"] ??
-              "QR Code tidak valid di sistem"),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
         ));
       }
