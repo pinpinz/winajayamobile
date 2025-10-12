@@ -1,20 +1,21 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:day35/pages/loginform.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// PAGE: Login
+import 'package:day35/pages/loginform.dart';
+
+// PAGE: Test (sesuaikan lokasi — ini mengacu ke lib/test.dart)
+import 'package:day35/pages/module/test.dart';
 
 // MODEL
 import 'package:day35/models/service.dart';
 
 // MODULE PAGES
-import 'package:day35/pages/module/AktivasiBarang.dart'; // -> class AktivasiPage
-import 'package:day35/pages/module/HistoryBarang.dart'; // -> class HistoryPage
-import 'package:day35/pages/module/ScanBarang.dart'; // -> class ScannerPage
-
-// ⚠️ Pilih salah satu sesuai file yang kamu punya:
-// import 'package:day35/pages/module/LabelBarang.dart';  // jika class ReturPage ada di sini
-import 'package:day35/pages/module/LabelBarang.dart';
-// API SERVICE (untuk ganti base URL dari header)
+import 'package:day35/pages/module/AktivasiBarang.dart'; // -> AktivasiPage
+import 'package:day35/pages/module/HistoryBarang.dart'; // -> HistoryPage
+import 'package:day35/pages/module/ScanBarang.dart'; // -> ScannerPage
+import 'package:day35/pages/module/LabelBarang.dart'; // -> ReturPage
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -32,6 +33,7 @@ class _HomePageState extends State<HomePage> {
     Service('Aktivasi', 'assets/icons/active.png'),
     Service('History', 'assets/icons/file.png'),
     Service('Jerigen Kembali', 'assets/icons/label.png'),
+    Service('TEST', 'assets/icons/label.png'),
   ];
 
   @override
@@ -42,6 +44,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       namaPegawai = prefs.getString("namaPegawai") ?? "Guest";
       levelUser = prefs.getString("levelUser") ?? "Staff Gudang";
@@ -71,6 +74,9 @@ class _HomePageState extends State<HomePage> {
     } else if (name == 'Jerigen Kembali') {
       Navigator.push(
           context, MaterialPageRoute(builder: (_) => const ReturPage()));
+    } else if (name == 'TEST') {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const TestScanPage()));
     }
   }
 
@@ -79,10 +85,9 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('dashboard', style: TextStyle(color: Colors.black)),
+        title: const Text('Dashboard', style: TextStyle(color: Colors.black)),
         elevation: 0,
         actions: [
-          // Tombol logout
           IconButton(
             onPressed: _logout,
             icon: Icon(Icons.logout, color: Colors.grey.shade700, size: 30),
@@ -111,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  // KARTU PROFIL ATAS —> pakai namaPegawai & levelUser
+                  // Kartu profil
                   FadeInUp(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -145,7 +150,7 @@ class _HomePageState extends State<HomePage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  namaPegawai, // ← GANTI Guest
+                                  namaPegawai,
                                   style: const TextStyle(
                                     color: Colors.black,
                                     fontSize: 20,
@@ -154,7 +159,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  levelUser, // ← GANTI Staff Gudang
+                                  levelUser,
                                   style: const TextStyle(
                                     color: Colors.black54,
                                     fontSize: 18,
@@ -170,24 +175,22 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 20),
 
-                  // TITLE CATEGORIES
+                  // Title categories
                   FadeInUp(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 20.0, right: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
-                          Text(
-                            'Categories',
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
+                          Text('Categories',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ),
 
-                  // GRID MENU
+                  // Grid menu
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 15),
@@ -207,7 +210,7 @@ class _HomePageState extends State<HomePage> {
                         return GestureDetector(
                           onTap: () => _goToService(svc.name),
                           child: FadeInUp(
-                            delay: Duration(milliseconds: 500 * index),
+                            delay: Duration(milliseconds: 120 * index),
                             child:
                                 serviceContainer(svc.imageURL, svc.name, index),
                           ),
@@ -220,7 +223,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // FOOTER
+          // Footer
           SafeArea(
             bottom: true,
             top: false,

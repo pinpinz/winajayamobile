@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Lottie.asset(
-                      'assets/animations/loginanimation.json', // pastikan path benar
+                      'assets/animation/loginanimation.json',
                       width: 150,
                       height: 150,
                       fit: BoxFit.contain,
